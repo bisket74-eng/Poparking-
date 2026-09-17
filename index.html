@@ -42,11 +42,12 @@ body{padding-bottom:28px}
 .brand h1{font-size:21px;line-height:1.05;margin:0;font-weight:800}
 .brand p{font-size:11px;margin:4px 0 0;opacity:.9}
 .edit-btn{
-  border:0;background:var(--red);color:#fff;font-weight:800;
-  border-radius:22px;padding:10px 15px;font-size:14px;
-  box-shadow:0 2px 5px #0003;cursor:pointer;white-space:nowrap;
+  border:1px solid #c8d6e5;background:#fff;color:var(--usps-blue);font-weight:800;
+  border-radius:10px;padding:10px 12px;font-size:13px;
+  box-shadow:0 1px 3px #0000000b;cursor:pointer;white-space:nowrap;
 }
-.edit-btn.active{background:#fff;color:var(--red)}
+.edit-btn:hover{background:var(--usps-blue-light)}
+.edit-btn.active{background:var(--usps-blue);color:#fff;border-color:var(--usps-blue)}
 
 .tools{
   max-width:900px;margin:0 auto;padding:10px 12px 0;
@@ -94,9 +95,13 @@ main{max-width:900px;margin:0 auto;padding:0 12px}
 }
 .panel-head h2{margin:0;color:var(--usps-blue-dark);font-size:20px}
 .count{font-size:12px;color:var(--muted);font-weight:700}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:440px}
-th,td{padding:11px 12px;border-bottom:1px solid #e5ebf2;text-align:left}
+.table-wrap{overflow-x:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:0}
+th,td{padding:10px 8px;border-bottom:1px solid #e5ebf2;text-align:left;overflow:hidden}
+th:nth-child(1),td:nth-child(1){width:17%}
+th:nth-child(2),td:nth-child(2){width:20%}
+th:nth-child(3),td:nth-child(3){width:20%}
+th:nth-child(4),td:nth-child(4){width:43%}
 th{
   background:#f1f6fb;color:#34516c;font-size:12px;
   text-transform:uppercase;letter-spacing:.04em;
@@ -108,7 +113,7 @@ tr:last-child td{border-bottom:0}
 .type-city{color:var(--usps-blue)}
 .type-rural{color:#8a5200;font-weight:700}
 .editing .editable{
-  width:100%;border:1px solid #b9cce0;border-radius:7px;
+  width:100%;min-width:0;border:1px solid #b9cce0;border-radius:7px;
   padding:8px;background:#fbfdff;font-size:15px;font-weight:700;
 }
 .editing .editable:focus{outline:2px solid #0757a633;border-color:var(--usps-blue)}
@@ -157,7 +162,7 @@ tr:last-child td{border-bottom:0}
   .app-header{position:static;background:#fff;color:#000;box-shadow:none;border-bottom:2px solid #000}
   .brand-mark{border-color:#000}
   .brand p{color:#444}
-  .edit-btn,.tools,.search,.tabs,.edit-bar,.status,.note{display:none!important}
+  .tools,.search,.tabs,.edit-bar,.status,.note{display:none!important}
   main{max-width:none;padding:0}
   .panel{border:0;box-shadow:none;border-radius:0}
   .panel-head{padding:8px 0}
@@ -183,15 +188,12 @@ tr:last-child td{border-bottom:0}
         <p>Vancouver, WA S&amp;DC • Route Finder reference</p>
       </div>
     </div>
-    <button class="edit-btn" id="editToggle" onclick="toggleEdit()">✎ Edit</button>
   </div>
 </header>
 
 <div class="tools">
   <button class="tool-btn" onclick="window.print()">🖨 Print</button>
-  <a class="tool-btn" id="csvDownload" download="vancouver-po-parking.csv" style="text-align:center">⬇ Download CSV</a>
-  <button class="tool-btn green" onclick="downloadHTML()">⬇ Download HTML</button>
-  <button class="tool-btn red" onclick="resetData()">↺ Reset Saved Changes</button>
+  <button class="tool-btn" id="editToggle" onclick="toggleEdit()">✎ Edit</button>
 </div>
 
 <div class="search">
@@ -211,7 +213,7 @@ tr:last-child td{border-bottom:0}
 
 <div class="note">
   C = city route. R = rural route. Parking spaces 1–59 are South; 60 and above are North. Changes made with Edit are saved on this device/browser.
-  Use Download CSV for a spreadsheet-friendly copy or Print for a paper reference.
+  Use Print for a paper reference.
 </div>
 
 <script>
@@ -261,70 +263,82 @@ function toggleEdit(){
 function render(){
   const q=document.getElementById("search").value.trim().toUpperCase();
   const source=editing?draft:data;
-  const rows=(source[active]||[]).filter(([route,space]) =>
-    !q || route.includes(q) || String(space).includes(q)
-  );
+  const zips=q ? Object.keys(source) : [active];
+  const sections=zips.map(zip=>{
+    const allRows=source[zip]||[];
+    const rows=q
+      ? allRows.map((row,index)=>({row,index})).filter(({row})=>{
+          const [route,space]=row;
+          return route.includes(q) || String(space).includes(q);
+        })
+      : allRows.map((row,index)=>({row,index}));
 
-  document.getElementById("content").innerHTML=`
-    <section class="panel zip-panel">
-      <div class="panel-head">
-        <h2>ZIP ${active}</h2>
-        <span class="count">${rows.length} route${rows.length===1?'':'s'}</span>
-      </div>
-      ${rows.length ? `
-      <div class="table-wrap">
-      <table>
-        <thead><tr><th>Route</th><th>Type</th><th>Parking Space</th><th>Lot</th>${editing?'<th class="edit-only"></th>':''}</tr></thead>
-        <tbody>
-        ${rows.map(([route,space],i)=>{
-          const rural=String(route).toUpperCase().startsWith("R");
-          const actualIndex=(source[active]||[]).indexOf((source[active]||[]).find(x=>x[0]===route && String(x[1])===String(space)));
-          return `<tr>
-            <td>${editing
-              ? `<input class="editable" value="${esc(route)}" onchange="editRoute(${actualIndex},this.value)">`
-              : `<span class="route ${rural?'rural':''}">${esc(route)}</span>`}</td>
-            <td class="${rural?'type-rural':'type-city'}">${rural?'Rural':'City'}</td>
-            <td>${editing
-              ? `<input class="editable" inputmode="numeric" value="${esc(space)}" placeholder="Parking #" onchange="editSpace(${actualIndex},this.value)">`
-              : (space===""?'—':esc(space))}</td>
-            <td>${space==="" ? '—' : (Number(space) <= 59 ? 'South' : 'North')}</td>
-            ${editing?`<td class="edit-only"><button class="delete-btn" title="Delete route" onclick="deleteRoute(${actualIndex})">×</button></td>`:''}
-          </tr>`;
-        }).join("")}
-        </tbody>
-      </table>
-      </div>` : `<div class="empty">No matching routes.</div>`}
-      <div class="add-row">
-        <input id="newRoute" placeholder="Route (C03 or R27)">
-        <input id="newSpace" inputmode="numeric" placeholder="Parking space">
-        <button onclick="addRoute()">+ Add Route</button>
-      </div>
-    </section>`;
+    if(q && !rows.length) return "";
+
+    return `
+      <section class="panel zip-panel">
+        <div class="panel-head">
+          <h2>ZIP ${zip}</h2>
+          <span class="count">${rows.length} route${rows.length===1?'':'s'}</span>
+        </div>
+        ${rows.length ? `
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>Space #</th><th>Type</th><th>Lot</th><th>Route</th>${editing?'<th class="edit-only"></th>':''}</tr></thead>
+          <tbody>
+          ${rows.map(({row,index})=>{
+            const [route,space]=row;
+            const rural=String(route).toUpperCase().startsWith("R");
+            return `<tr>
+              <td>${editing
+                ? `<input class="editable" inputmode="numeric" value="${esc(space)}" placeholder="Space #" onchange="editSpace('${zip}',${index},this.value)">`
+                : (space===""?'—':esc(space))}</td>
+              <td class="${rural?'type-rural':'type-city'}">${rural?'Rural':'City'}</td>
+              <td>${space==="" ? '—' : (Number(space) <= 59 ? 'South' : 'North')}</td>
+              <td>${editing
+                ? `<input class="editable" value="${esc(route)}" onchange="editRoute('${zip}',${index},this.value)">`
+                : `<span class="route ${rural?'rural':''}">${esc(route)}</span>`}</td>
+              ${editing?`<td class="edit-only"><button class="delete-btn" title="Delete route" onclick="deleteRoute('${zip}',${index})">×</button></td>`:''}
+            </tr>`;
+          }).join("")}
+          </tbody>
+        </table>
+        </div>` : `<div class="empty">No matching routes.</div>`}
+        ${editing && !q ? `<div class="add-row">
+          <input id="newRoute-${zip}" placeholder="Route (C03 or R27)">
+          <input id="newSpace-${zip}" inputmode="numeric" placeholder="Space #">
+          <button onclick="addRoute('${zip}')">+ Add Route</button>
+        </div>` : ""}
+      </section>`;
+  }).join("");
+
+  document.getElementById("content").innerHTML=sections || `<div class="empty">No matching routes.</div>`;
 }
+
 function esc(v){
   return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-function editRoute(i,value){
-  if(i>=0) draft[active][i][0]=value.trim().toUpperCase();
+function editRoute(zip,i,value){
+  if(i>=0 && draft[zip] && draft[zip][i]) draft[zip][i][0]=value.trim().toUpperCase();
   renderTabs();render();
 }
-function editSpace(i,value){
-  if(i>=0) draft[active][i][1]=value.trim();
+function editSpace(zip,i,value){
+  if(i>=0 && draft[zip] && draft[zip][i]) draft[zip][i][1]=value.trim();
   render();
 }
-function deleteRoute(i){
-  if(i<0)return;
-  const route=draft[active][i][0];
-  if(confirm("Delete route "+route+" from ZIP "+active+"?")){
-    draft[active].splice(i,1);render();
+function deleteRoute(zip,i){
+  if(i<0 || !draft[zip])return;
+  const route=draft[zip][i][0];
+  if(confirm("Delete route "+route+" from ZIP "+zip+"?")){
+    draft[zip].splice(i,1);render();
   }
 }
-function addRoute(){
-  const r=document.getElementById("newRoute").value.trim().toUpperCase();
-  const s=document.getElementById("newSpace").value.trim();
+function addRoute(zip){
+  const r=document.getElementById("newRoute-"+zip).value.trim().toUpperCase();
+  const s=document.getElementById("newSpace-"+zip).value.trim();
   if(!r){alert("Enter a route number.");return}
-  draft[active].push([r,s]);
-  draft[active].sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));
+  draft[zip].push([r,s]);
+  draft[zip].sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));
   render();
 }
 function saveEdits(){
@@ -361,32 +375,6 @@ function resetData(){
   document.getElementById("editToggle").classList.remove("active");
   renderTabs();render();updateCSV();
   setStatus("Original list restored.");
-}
-function makeCSV(){
-  const out=[["ZIP Code","Route","Type","Parking Space","Lot"]];
-  for(const [zip,rows] of Object.entries(data))
-    for(const [route,space] of rows)
-      out.push([zip,route,String(route).startsWith("R")?"Rural":"City",space,space===""?"":(Number(space)<=59?"South":"North")]);
-  return out.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\\n");
-}
-function updateCSV(){
-  const blob=new Blob([makeCSV()],{type:"text/csv;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.getElementById("csvDownload");
-  if(a.dataset.url)URL.revokeObjectURL(a.dataset.url);
-  a.href=url;a.dataset.url=url;
-}
-function downloadHTML(){
-  // Export a self-contained page containing the current saved list.
-  const currentData=JSON.stringify(data);
-  let source=document.documentElement.outerHTML;
-  source=source.replace(/const originalData = \{[\s\S]*?\n\};/,
-    "const originalData = "+currentData+";");
-  const blob=new Blob(["<!DOCTYPE html>\\n"+source],{type:"text/html;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download="index.html";a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 document.getElementById("search").addEventListener("input",render);
 renderTabs();render();updateCSV();
