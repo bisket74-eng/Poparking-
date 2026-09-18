@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0757a6">
+<title>Vancouver PO Parking</title>
+
+<style>
+:root{
+  --usps-blue:#0757a6;
+  --usps-blue-dark:#063f7a;
+  --usps-blue-light:#eaf3fc;
+  --green:#168447;
+  --ink:#17212b;
+  --muted:#64748b;
+  --line:#d6e0ea;
+  --bg:#eef3f8;
+  --white:#fff;
+  --shadow:0 3px 12px rgba(0,0,0,.12);
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  padding:0;
+  min-height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+}
+
+body{padding-bottom:28px}
+
+/* Header */
+.app-header{
+  background:linear-gradient(135deg,var(--usps-blue-dark),var(--usps-blue));
+  color:#fff;
+  padding:14px 14px 13px;
+  box-shadow:0 3px 10px rgba(0,0,0,.22);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+.header-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  max-width:900px;
+  margin:auto;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+
+.brand-mark{
+  width:40px;
+  height:40px;
+  border:2px solid rgba(255,255,255,.9);
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  font-size:18px;
+  flex:none;
+}
+
+.brand h1{
+  font-size:21px;
+  line-height:1.05;
+  margin:0;
+  font-weight:800;
+}
+
+.brand p{
+  font-size:11px;
+  margin:4px 0 0;
+  opacity:.9;
+}
+
+/* Sort + Print row */
+.top-tools{
+  max-width:900px;
+  margin:6px auto 0;
+  padding:0 12px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+
+.sort-box{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+
+.sort-label{
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.sort-option{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  border:1px solid #c8d6e5;
+  background:#fff;
+  color:var(--usps-blue);
+  border-radius:9px;
+  padding:8px 9px;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+.sort-option:hover{background:var(--usps-blue-light)}
+
+.sort-option input{
+  margin:0;
+  accent-color:var(--usps-blue);
+}
+
+.print-btn{
+  border:1px solid #c8d6e5;
+  background:#fff;
+  color:var(--usps-blue);
+  border-radius:10px;
+  padding:9px 13px;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 1px 3px #0000000b;
+  white-space:nowrap;
+}
+
+.print-btn:hover{background:var(--usps-blue-light)}
+
+/* Search */
+.search{
+  max-width:900px;
+  margin:6px auto 0;
+  padding:0 12px;
+}
+
+.search input{
+  width:100%;
+  height:42px;
+  border:1px solid #c8d6e5;
+  border-radius:10px;
+  background:#fff;
+  padding:0 13px;
+  font-size:15px;
+  outline:none;
+  box-shadow:0 1px 3px #0000000b;
+}
+
+.search input:focus{
+  border-color:var(--usps-blue);
+  box-shadow:0 0 0 3px #0757a61a;
+}
+
+/* Tabs */
+.tabs{
+  max-width:900px;
+  margin:7px auto 0;
+  padding:0 12px;
+  display:flex;
+  gap:5px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+
+.tabs::-webkit-scrollbar{display:none}
+
+.tab{
+  flex:0 0 auto;
+  border:1px solid #c7d7e8;
+  border-bottom:0;
+  background:#dbe9f7;
+  color:#24527c;
+  border-radius:9px 9px 0 0;
+  padding:10px 14px;
+  font-size:14px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.tab.active{
+  background:#fff;
+  color:var(--usps-blue);
+  padding-top:11px;
+}
+
+/* Main content */
+main{
+  max-width:900px;
+  margin:0 auto;
+  padding:0 12px;
+}
+
+.panel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:0 11px 11px 11px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+
+.panel-head{
+  padding:13px 14px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.panel-head h2{
+  margin:0;
+  color:var(--usps-blue-dark);
+  font-size:20px;
+}
+
+.count{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.table-wrap{
+  overflow-x:hidden;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  min-width:0;
+}
+
+th,td{
+  padding:10px 8px;
+  border-bottom:1px solid #e5ebf2;
+  text-align:left;
+  overflow:hidden;
+}
+
+th:nth-child(1),td:nth-child(1){width:23%}
+th:nth-child(2),td:nth-child(2){width:23%}
+th:nth-child(3),td:nth-child(3){width:54%}
+
+th{
+  background:#f1f6fb;
+  color:#34516c;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+td{font-size:15px}
+
+tr:last-child td{border-bottom:0}
+
+.space-number,.route-number{
+  font-size:18px;
+  font-weight:900;
+}
+
+.vehicle-number{font-weight:700}
+
+.empty{
+  padding:30px;
+  text-align:center;
+  color:var(--muted);
+}
+
+.note{
+  max-width:900px;
+  margin:12px auto 0;
+  padding:0 12px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.4;
+}
+
+.all-panel{
+  border-radius:11px;
+}
+
+/* Print */
+@media print{
+  body{
+    background:#fff;
+    padding:0;
+  }
+
+  .app-header{
+    position:static;
+    background:#fff;
+    color:#000;
+    box-shadow:none;
+    border-bottom:2px solid #000;
+  }
+
+  .brand-mark{border-color:#000}
+  .brand p{color:#444}
+
+  .top-tools,.search,.tabs,.note{
+    display:none!important;
+  }
+
+  main{
+    max-width:none;
+    padding:0;
+  }
+
+  .panel{
+    border:0;
+    box-shadow:none;
+    border-radius:0;
+  }
+
+  .panel-head{
+    padding:8px 0;
+  }
+
+  th{
+    background:#eee!important;
+  }
+
+  table{
+    min-width:0;
+  }
+
+  /* Whole-office "All" stays one continuous list. */
+  .all-panel{
+    break-before:auto;
+    page-break-before:auto;
+  }
+
+  /* A selected ZIP is also printed exactly as displayed. */
+  .zip-panel{
+    break-before:auto;
+    page-break-before:auto;
+  }
+
+  .panel-head h2{
+    font-size:18px;
+  }
+
+  th,td{
+    padding:8px 7px;
+  }
+}
+
+/* Desktop: make the tab strip mouse-scrollable and show its scrollbar.
+   Phones keep the cleaner hidden-scrollbar behavior above. */
+@media(min-width:521px){
+  .tabs{
+    overflow-x:auto;
+    scrollbar-width:auto;
+    scrollbar-color:#9fb3c8 #eef3f8;
+    cursor:grab;
+  }
+
+  .tabs::-webkit-scrollbar{
+    display:block;
+    height:10px;
+  }
+
+  .tabs::-webkit-scrollbar-track{
+    background:#eef3f8;
+    border-radius:6px;
+  }
+
+  .tabs::-webkit-scrollbar-thumb{
+    background:#9fb3c8;
+    border-radius:6px;
+  }
+}
+
+@media(max-width:520px){
+  .top-tools{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:5px;
+  }
+
+  .sort-box{
+    gap:4px;
+  }
+
+  .sort-label{
+    font-size:12px;
+  }
+
+  .sort-option{
+    padding:7px 7px;
+    font-size:12px;
+  }
+
+  .print-btn{
+    padding:8px 10px;
+    font-size:12px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="app-header">
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark">PO</div>
+      <div>
+        <h1>Vancouver PO Parking</h1>
+        <p>Vancouver, WA S&amp;DC • Route Finder reference</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="top-tools">
+  <div class="sort-box">
+    <span class="sort-label">Sort by:</span>
+
+    <label class="sort-option">
+      <input type="radio" name="sortOrder" value="space" checked>
+      Space #
+    </label>
+
+    <label class="sort-option">
+      <input type="radio" name="sortOrder" value="route">
+      Route
+    </label>
+  </div>
+
+  <button class="print-btn" id="printBtn">🖨 Print</button>
+</div>
+
+<div class="search">
+  <input
+    id="search"
+    type="search"
+    placeholder="Search space #, route, or vehicle number…"
+    autocomplete="off"
+  >
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<main id="content"></main>
+
+<div class="note">
+  Parking spaces 1–59 are South; 60 and above are North.
+  Use the All tab to view the whole office in one continuous list.
+  Print prints exactly what is currently on the screen.
+</div>
+
+<script>
+/*
+  MASTER ROUTE DATA
+  Preserve all entries when making future edits.
+*/
+const originalData = {
+  "98660":[
+    ["C03",59,""],
+    ["C05",58,""],
+    ["C07",57,""],
+    ["C08",56,""],
+    ["C09",17,""],
+    ["C10",18,""],
+    ["C19",19,""],
+    ["C21",16,""],
+    ["C23",15,""],
+    ["C44",14,""],
+    ["C47",13,""]
+  ],
+
+  "98661":[
+    ["C27",44,""],
+    ["C41",41,""],
+    ["C45",40,""],
+    ["C46",39,""],
+    ["C48",38,""],
+    ["C52",37,""],
+    ["C60",32,""],
+    ["C64",33,""],
+    ["C71",34,""],
+    ["C72",36,""],
+    ["C73",35,""],
+    ["C16",65,""],
+    ["C17",66,""],
+    ["C19",67,""],
+    ["C20",68,""],
+    ["C21",69,""],
+    ["C23",70,""],
+    ["C25",71,""],
+    ["C31",43,""],
+    ["C35",42,""]
+  ],
+
+  "98663":[
+    ["C01",9,""],
+    ["C11",10,""],
+    ["C12",11,""],
+    ["C13",12,""],
+    ["C14",22,""],
+    ["C15",21,""],
+    ["C16",20,""],
+    ["C17",55,""],
+    ["C18",54,""],
+    ["C20",53,""]
+  ],
+
+  "98665":[
+    ["C24",45,""],
+    ["C79",46,""],
+    ["C83",47,""],
+    ["C85",48,""],
+    ["C88",31,""],
+    ["C89",30,""],
+    ["C91",29,""],
+    ["C92",28,""],
+    ["C93",1,""],
+    ["C94",2,""],
+    ["C97",3,""],
+    ["C98",4,""],
+    ["C99",5,""],
+    ["C100",6,""],
+    ["C101",7,""]
+  ],
+
+  "98685":[
+    ["R27",81,""],
+    ["R28",82,""],
+    ["R35",83,""],
+    ["C95",8,""],
+    ["C90",25,""],
+    ["C87",26,""],
+    ["C82",27,""],
+    ["C37",49,""],
+    ["C78",50,""],
+    ["R29",73,""],
+    ["R08",74,""],
+    ["R09",75,""],
+    ["R10",76,""],
+    ["R17",77,""],
+    ["R18",78,""],
+    ["R20",79,""],
+    ["R25",80,""]
+  ],
+
+  "98686":[
+    ["R06",60,""],
+    ["R07",61,""],
+    ["R16",62,""],
+    ["R19",63,""],
+    ["R26",64,""],
+    ["R30",72,""],
+    ["R45",84,""],
+    ["C80",23,""],
+    ["C36",24,""],
+    ["C86",51,""],
+    ["C96",52,""]
+  ]
+};
+
+const key = "vancouverPOParkingData_v3";
+const legacyKey = "vancouverPOParkingData";
+
+let data = loadData();
+let active = "ALL";
+let sortBy = "space";
+
+function clone(o){
+  return JSON.parse(JSON.stringify(o));
+}
+
+/*
+  Keep the current master route/space list, but preserve any
+  vehicle numbers saved on this device from the previous version.
+*/
+function loadData(){
+  const master = clone(originalData);
+
+  try{
+    let raw = localStorage.getItem(key);
+
+    if(!raw){
+      raw = localStorage.getItem(legacyKey);
+    }
+
+    if(raw){
+      const saved = JSON.parse(raw);
+
+      for(const zip of Object.keys(master)){
+        const savedRows = Array.isArray(saved[zip]) ? saved[zip] : [];
+
+        const vehicles = new Map(
+          savedRows.map(r => [
+            String(r?.[0] ?? "").trim().toUpperCase(),
+            String(r?.[2] ?? "")
+          ])
+        );
+
+        master[zip] = master[zip].map(r => [
+          r[0] ?? "",
+          r[1] ?? "",
+          vehicles.has(String(r[0] ?? "").trim().toUpperCase())
+            ? vehicles.get(String(r[0] ?? "").trim().toUpperCase())
+            : (r[2] ?? "")
+        ]);
+      }
+    }
+  }catch(e){
+    /* If saved data is damaged, use the clean master data. */
+  }
+
+  return master;
+}
+
+function esc(v){
+  return String(v ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+function compareRows(a,b){
+  const av = sortBy === "route"
+    ? String(a[0] ?? "")
+    : String(a[1] ?? "");
+
+  const bv = sortBy === "route"
+    ? String(b[0] ?? "")
+    : String(b[1] ?? "");
+
+  const an = parseInt(av,10);
+  const bn = parseInt(bv,10);
+
+  if(!isNaN(an) && !isNaN(bn) && an !== bn){
+    return an - bn;
+  }
+
+  if(!isNaN(an) && isNaN(bn)) return -1;
+  if(isNaN(an) && !isNaN(bn)) return 1;
+
+  return av.localeCompare(
+    bv,
+    undefined,
+    {numeric:true,sensitivity:"base"}
+  );
+}
+
+function getAllRows(){
+  const rows = [];
+
+  Object.keys(data).forEach(zip => {
+    (data[zip] || []).forEach(row => {
+      rows.push({
+        zip: zip,
+        row: row
+      });
+    });
+  });
+
+  return rows;
+}
+
+function getFilteredRows(rows){
+  const q = document.getElementById("search").value.trim().toUpperCase();
+
+  if(!q){
+    return rows;
+  }
+
+  return rows.filter(item => {
+    const row = item.row;
+
+    return String(row[0] ?? "").toUpperCase().includes(q) ||
+           String(row[1] ?? "").toUpperCase().includes(q) ||
+           String(row[2] ?? "").toUpperCase().includes(q);
+  });
+}
+
+function renderTabs(){
+  const tabs = [
+    `<button class="tab ${active === "ALL" ? "active" : ""}" onclick="setTab('ALL')">All</button>`
+  ];
+
+  Object.keys(data).forEach(zip => {
+    tabs.push(
+      `<button class="tab ${active === zip ? "active" : ""}" onclick="setTab('${zip}')">${zip}</button>`
+    );
+  });
+
+  document.getElementById("tabs").innerHTML = tabs.join("");
+}
+
+function setTab(tab){
+  active = tab;
+  renderTabs();
+  render();
+}
+
+function render(){
+  const content = document.getElementById("content");
+
+  /*
+    ALL = one continuous list across every ZIP.
+    It is NEVER grouped or separated by ZIP.
+  */
+  if(active === "ALL"){
+    let items = getAllRows();
+    items = getFilteredRows(items);
+
+    items.sort((a,b) => compareRows(a.row,b.row));
+
+    content.innerHTML = renderAllPanel(items);
+    return;
+  }
+
+  /*
+    Individual ZIP tab = only that ZIP.
+  */
+  let items = (data[active] || []).map(row => ({
+    zip: active,
+    row: row
+  }));
+
+  items = getFilteredRows(items);
+
+  items.sort((a,b) => compareRows(a.row,b.row));
+
+  content.innerHTML = renderZipPanel(active,items);
+}
+
+function renderAllPanel(items){
+  if(!items.length){
+    return `<div class="empty">No matching parking spaces.</div>`;
+  }
+
+  const rows = items.map(item => {
+    const row = item.row;
+
+    const space = String(row[1] ?? "");
+    const route = String(row[0] ?? "");
+    const vehicle = String(row[2] ?? "");
+
+    return `
+      <tr>
+        <td>
+          <strong class="space-number">
+            ${space === "" ? "" : esc(space)}
+          </strong>
+        </td>
+
+        <td>
+          <strong class="route-number">${esc(route)}</strong>
+        </td>
+
+        <td>
+          ${vehicle === "" ? "" : `<span class="vehicle-number">${esc(vehicle)}</span>`}
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <section class="panel all-panel">
+      <div class="panel-head">
+        <h2>All Parking Spaces</h2>
+        <span class="count">
+          ${items.length} parking space${items.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Space #</th>
+              <th>Route</th>
+              <th>Vehicle Number</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderZipPanel(zip,items){
+  if(!items.length){
+    return `
+      <section class="panel zip-panel">
+        <div class="panel-head">
+          <h2>ZIP ${esc(zip)}</h2>
+          <span class="count">0 parking spaces</span>
+        </div>
+        <div class="empty">No matching parking spaces.</div>
+      </section>
+    `;
+  }
+
+  const rows = items.map(item => {
+    const row = item.row;
+
+    const space = String(row[1] ?? "");
+    const route = String(row[0] ?? "");
+    const vehicle = String(row[2] ?? "");
+
+    return `
+      <tr>
+        <td>
+          <strong class="space-number">
+            ${space === "" ? "" : esc(space)}
+          </strong>
+        </td>
+
+        <td>
+          <strong class="route-number">${esc(route)}</strong>
+        </td>
+
+        <td>
+          ${vehicle === "" ? "" : `<span class="vehicle-number">${esc(vehicle)}</span>`}
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <section class="panel zip-panel">
+      <div class="panel-head">
+        <h2>ZIP ${esc(zip)}</h2>
+        <span class="count">
+          ${items.length} parking space${items.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Space #</th>
+              <th>Route</th>
+              <th>Vehicle Number</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+/*
+  PRINT EXACTLY WHAT IS CURRENTLY DISPLAYED:
+  - All tab = one continuous whole-office list.
+  - ZIP tab = that ZIP only.
+  - Current Space/Route sort is preserved.
+  - Current search filtering is preserved.
+*/
+function printCurrentView(){
+  window.print();
+}
+
+document.querySelectorAll('input[name="sortOrder"]').forEach(radio => {
+  radio.addEventListener("change", function(){
+    sortBy = this.value;
+    render();
+  });
+});
+
+document.getElementById("printBtn").addEventListener("click",printCurrentView);
+
+document.getElementById("search").addEventListener("input",render);
+
+renderTabs();
+render();
+</script>
+
+</body>
+</html>
