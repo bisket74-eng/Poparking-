@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0757a6">
+<title>Vancouver PO Parking</title>
+<style>
+:root{
+  --usps-blue:#0757a6;
+  --usps-blue-dark:#063f7a;
+  --usps-blue-light:#eaf3fc;
+  --red:#c62828;
+  --green:#168447;
+  --gold:#f5c542;
+  --ink:#17212b;
+  --muted:#64748b;
+  --line:#d6e0ea;
+  --bg:#eef3f8;
+  --white:#fff;
+  --shadow:0 3px 12px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg)}
+body{padding-bottom:28px}
+
+/* USPS-style header */
+.app-header{
+  background:linear-gradient(135deg,var(--usps-blue-dark),var(--usps-blue));
+  color:#fff;
+  padding:14px 14px 13px;
+  box-shadow:0 3px 10px rgba(0,0,0,.22);
+  position:sticky;top:0;z-index:20;
+}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:900px;margin:auto}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{
+  width:40px;height:40px;border:2px solid rgba(255,255,255,.9);
+  border-radius:50%;display:grid;place-items:center;font-weight:900;
+  font-size:18px;flex:none;
+}
+.brand h1{font-size:21px;line-height:1.05;margin:0;font-weight:800}
+.brand p{font-size:11px;margin:4px 0 0;opacity:.9}
+
+.tools{
+  max-width:900px;margin:0 auto;padding:6px 12px 0;
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+}
+.tool-btn{
+  border:1px solid #c8d6e5;background:#fff;color:var(--usps-blue);
+  border-radius:10px;padding:10px 12px;font-size:13px;font-weight:800;
+  cursor:pointer;box-shadow:0 1px 3px #0000000b;
+}
+.tool-btn:hover{background:var(--usps-blue-light)}
+.tool-btn.green{color:var(--green)}
+.tool-btn.red{color:var(--red)}
+
+.search{
+  max-width:900px;margin:6px auto 0;padding:0 12px;
+}
+.search input{
+  width:100%;height:42px;border:1px solid #c8d6e5;border-radius:10px;
+  background:#fff;padding:0 13px;font-size:15px;outline:none;
+  box-shadow:0 1px 3px #0000000b;
+}
+.search input:focus{border-color:var(--usps-blue);box-shadow:0 0 0 3px #0757a61a}
+
+/* ZIP tabs */
+.tabs{
+  max-width:900px;margin:7px auto 0;padding:0 12px;
+  display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;border:1px solid #c7d7e8;border-bottom:0;
+  background:#dbe9f7;color:#24527c;border-radius:9px 9px 0 0;
+  padding:10px 14px;font-size:14px;font-weight:800;cursor:pointer;
+}
+.tab.active{background:#fff;color:var(--usps-blue);padding-top:11px}
+main{max-width:900px;margin:0 auto;padding:0 12px}
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:0 11px 11px 11px;
+  overflow:hidden;box-shadow:var(--shadow);
+}
+.panel-head{
+  padding:13px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.panel-head h2{margin:0;color:var(--usps-blue-dark);font-size:20px}
+.count{font-size:12px;color:var(--muted);font-weight:700}
+.table-wrap{overflow-x:hidden}
+table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:0}
+th,td{padding:10px 8px;border-bottom:1px solid #e5ebf2;text-align:left;overflow:hidden}
+th:nth-child(1),td:nth-child(1){width:23%}
+th:nth-child(2),td:nth-child(2){width:23%}
+th:nth-child(3),td:nth-child(3){width:46%}
+th:nth-child(4),td:nth-child(4){width:42px}
+.space-number,.route-number{font-size:18px;font-weight:900}
+.vehicle-number{font-weight:700}
+.vehicle-input{width:100%;min-width:0;border:1px solid #b9cce0;border-radius:7px;padding:8px;background:#fbfdff;font-size:15px;font-weight:700}
+th{
+  background:#f1f6fb;color:#34516c;font-size:12px;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+td{font-size:15px}
+tr:last-child td{border-bottom:0}
+.route{font-weight:900;color:var(--usps-blue)}
+.route.rural{color:#8a5200}
+.type-city{color:var(--usps-blue)}
+.type-rural{color:#8a5200;font-weight:700}
+.editing .editable{
+  width:100%;min-width:0;border:1px solid #b9cce0;border-radius:7px;
+  padding:8px;background:#fbfdff;font-size:15px;font-weight:700;
+}
+.editing .editable:focus{outline:2px solid #0757a633;border-color:var(--usps-blue)}
+.delete-btn{
+  border:0;background:#fdecec;color:var(--red);font-weight:900;
+  width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;
+}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+
+.edit-bar{
+  display:none;max-width:900px;margin:6px auto 0;padding:0 12px;
+}
+.editing-on .edit-bar{display:flex;gap:8px}
+.save-btn,.cancel-btn{
+  flex:1;border:0;border-radius:10px;padding:11px;font-weight:900;cursor:pointer;
+}
+.save-btn{background:var(--green);color:#fff}
+.cancel-btn{background:#fff;color:var(--red);border:1px solid #efbaba}
+.status{
+  max-width:900px;margin:8px auto 0;padding:0 12px;
+  color:var(--green);font-size:12px;font-weight:700;min-height:16px;
+}
+.note{
+  max-width:900px;margin:12px auto 0;padding:0 12px;
+  color:var(--muted);font-size:11px;line-height:1.4;
+}
+
+@media(min-width:650px){
+  .tools{grid-template-columns:repeat(4,1fr)}
+}
+
+@media print{
+  body{background:#fff;padding:0}
+  .app-header{position:static;background:#fff;color:#000;box-shadow:none;border-bottom:2px solid #000}
+  .brand-mark{border-color:#000}
+  .brand p{color:#444}
+  .tools,.search,.tabs,.edit-bar,.status,.note{display:none!important}
+  main{max-width:none;padding:0}
+  .panel{border:0;box-shadow:none;border-radius:0}
+  .panel-head{padding:8px 0}
+  .zip-panel{break-before:page}
+  .zip-panel:first-child{break-before:auto}
+  th{background:#eee!important}
+  .delete-col,.edit-only{display:none!important}
+  table{min-width:0}
+}
+
+/* Edit mode body marker */
+.editing-on .panel{border-color:#a9c4df}
+
+.view-tools{max-width:900px;margin:9px auto 0;padding:0 12px;display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:8px}
+.sort-btn,.print-btn{border:1px solid #c8d6e5;background:#fff;color:var(--usps-blue);border-radius:10px;padding:9px 10px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 1px 3px #0000000b}
+.sort-btn.active{background:var(--usps-blue);color:#fff;border-color:var(--usps-blue)}
+.sort-btn:hover,.print-btn:hover{background:var(--usps-blue-light)}
+@media(max-width:520px){.view-tools{grid-template-columns:1fr 1fr}.print-btn{grid-column:1/-1}}
+@media print{.view-tools{display:none!important}}
+
+@media print{
+  body.print-office .zip-panel{break-before:auto}
+  body.print-office .zip-panel:first-child{break-before:auto}
+}
+
+/* Hidden action options: revealed only after Print or Edit is tapped */
+.action-options{
+  max-width:900px;
+  margin:4px auto 0;
+  padding:0 12px;
+  display:none;
+  gap:6px;
+}
+.action-options.show{display:grid}
+.sort-options{
+  align-items:center;
+  grid-template-columns:auto auto auto auto;
+}
+.sort-label{font-size:12px;font-weight:900;color:var(--ink);white-space:nowrap}
+.sort-options label{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  border:1px solid #c8d6e5;background:#fff;color:var(--usps-blue);
+  border-radius:8px;padding:7px 8px;font-size:12px;font-weight:800;
+  cursor:pointer;white-space:nowrap;
+}
+.sort-options input{margin:0;accent-color:var(--usps-blue)}
+.print-options{
+  align-items:center;
+  grid-template-columns:auto auto auto;
+}
+.print-label{font-size:12px;font-weight:900;color:var(--ink);white-space:nowrap}
+.print-options label{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  border:1px solid #c8d6e5;background:#fff;color:var(--usps-blue);
+  border-radius:8px;padding:7px 8px;font-size:12px;font-weight:800;
+  cursor:pointer;white-space:nowrap;
+}
+.print-options input{margin:0;accent-color:var(--usps-blue)}
+.sort-options label:hover,.print-options label:hover{background:var(--usps-blue-light)}
+
+@media(max-width:520px){
+  .action-options{
+    width:100%;
+    grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);
+    gap:5px
+  }
+  .sort-options label,.print-options label{
+    padding:7px 6px;
+    font-size:12px;
+    white-space:nowrap
+  }
+  .sort-label,.print-label{
+    font-size:12px;
+    white-space:nowrap
+  }
+}
+
+@media print{
+  .action-options{display:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark">PO</div>
+      <div>
+        <h1>Vancouver PO Parking</h1>
+        <p>Vancouver, WA S&amp;DC • Route Finder reference</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tools">
+  <button class="tool-btn" id="printToggle" onclick="togglePrintOptions()">🖨 Print</button>
+  <button class="tool-btn" id="editToggle" onclick="toggleEdit()">✎ Edit</button>
+</div>
+
+<div class="action-options sort-options" id="editOptions">
+  <span class="sort-label">Sort by:</span>
+  <label><input type="radio" name="sortOrder" value="space" checked onchange="setSort('space')"> Space #</label>
+  <label><input type="radio" name="sortOrder" value="route" onchange="setSort('route')"> Route</label>
+</div>
+
+<div class="action-options print-options" id="printOptions">
+  <span class="print-label">Print:</span>
+  <label><input type="radio" name="printScope" value="selected" checked onchange="setPrintScope('selected')"> Selected ZIP</label>
+  <label><input type="radio" name="printScope" value="office" onchange="setPrintScope('office')"> Whole Office</label>
+</div>
+
+<div class="search">
+  <input id="search" type="search" placeholder="Search space #, route, or vehicle number…">
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="edit-bar">
+  <button class="save-btn" onclick="saveEdits()">✓ Save Changes</button>
+  <button class="cancel-btn" onclick="cancelEdits()">Cancel</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<main id="content"></main>
+
+<div class="note">
+  Parking spaces 1–59 are South; 60 and above are North. Changes made with Edit are saved on this device/browser.
+  Use Print for the open ZIP, or Print Whole Office for all ZIPs.
+</div>
+
+<script>
+/* MASTER ROUTE DATA — preserve all entries when making future edits. */
+const originalData = {
+  "98660":[["C03",59,""],["C05",58,""],["C07",57,""],["C08",56,""],["C09",17,""],["C10",18,""],["C19",19,""],["C21",16,""],["C23",15,""],["C44",14,""],["C47",13,""]],
+  "98661":[["C27",44,""],["C41",41,""],["C45",40,""],["C46",39,""],["C48",38,""],["C52",37,""],["C60",32,""],["C64",33,""],["C71",34,""],["C72",36,""],["C16",65,""],["C17",66,""],["C19",67,""],["C20",68,""],["C21",69,""],["C23",70,""],["C25",71,""],["C31",43,""],["C35",42,""]],
+  "98663":[["C01",9,""],["C11",10,""],["C12",11,""],["C13",12,""],["C14",22,""],["C15",21,""],["C16",20,""],["C17",55,""],["C18",54,""],["C20",53,""]],
+  "98665":[["C24",45,"6524"],["C79",46,"6579"],["C83",47,"6583"],["C85",48,"6585"],["C88",31,"6588"],["C89",30,"6589"],["C91",29,"6591"],["C92",28,"6592"],["C93",1,"6593"],["C94",2,"6594"],["C97",3,"6597"],["C98",4,"6598"],["C99",5,"6599"],["C100",6,"65100"],["C101",7,"65101"]],
+  "98685":[["R27",81,""],["R28",82,""],["R35",83,""],["C95",5,""],["C90",25,""],["C87",26,""],["C82",27,""],["C37",49,""],["C78",50,""],["R29",73,""],["R08",74,""],["R09",75,""],["R10",76,""],["R17",77,""],["R18",78,""],["R20",79,""],["R25",80,""]],
+  "98686":[["R06",60,""],["R07",61,""],["R16",62,""],["R19",63,""],["R26",64,""],["R30",72,""],["R45",84,""],["C80",23,""],["C36",24,""],["C86",51,""],["C96",52,""]]
+};
+
+const key="vancouverPOParkingData_v3";
+const legacyKey="vancouverPOParkingData";
+let data=loadData();
+let active=Object.keys(data)[0];
+let editing=false;
+let draft=null;
+let sortBy='space';
+let printScope='selected';
+
+function clone(o){return JSON.parse(JSON.stringify(o))}
+
+function loadData(){
+  const master=clone(originalData);
+  try{
+    let raw=localStorage.getItem(key);
+    if(!raw) raw=localStorage.getItem(legacyKey);
+    if(raw){
+      const saved=JSON.parse(raw);
+      // The hardwired master controls which routes/spaces exist.
+      // Preserve only vehicle numbers previously entered on this device.
+      for(const zip of Object.keys(master)){
+        const savedRows=Array.isArray(saved[zip])?saved[zip]:[];
+        const vehicles=new Map(
+          savedRows.map(r=>[
+            String(r?.[0]??"").trim().toUpperCase(),
+            String(r?.[2]??"")
+          ])
+        );
+        master[zip]=master[zip].map(r=>[
+          r[0]??"",
+          r[1]??"",
+          vehicles.has(String(r[0]??"").trim().toUpperCase())
+            ? vehicles.get(String(r[0]??"").trim().toUpperCase())
+            : (r[2]??"")
+        ]);
+      }
+    }
+  }catch(e){}
+  return master;
+}
+
+function hideActionOptions(){
+  document.getElementById("editOptions").classList.remove("show");
+  document.getElementById("printOptions").classList.remove("show");
+}
+
+function togglePrintOptions(){
+  const p=document.getElementById("printOptions");
+  const isShown=p.classList.contains("show");
+  document.getElementById("editOptions").classList.remove("show");
+  if(isShown){
+    if(printScope==="office") printOffice();
+    else printSelectedZip();
+  }else{
+    p.classList.add("show");
+  }
+}
+
+function setSort(mode){
+  sortBy=mode;
+  const radio=document.querySelector(`input[name="sortOrder"][value="${mode}"]`);
+  if(radio) radio.checked=true;
+  render();
+}
+
+function printSelectedZip(){
+  hideActionOptions();
+  window.print();
+}
+
+function setPrintScope(mode){
+  printScope=mode;
+  const radio=document.querySelector(`input[name="printScope"][value="${mode}"]`);
+  if(radio) radio.checked=true;
+}
+
+function printOffice(){
+  hideActionOptions();
+  document.body.classList.add("print-office");
+  renderAllForPrint();
+  setTimeout(()=>window.print(),50);
+}
+
+/*
+  WHOLE OFFICE PRINT:
+  One continuous list, not separated by ZIP.
+  Always sorted by parking space number.
+*/
+function renderAllForPrint(){
+  const source=editing?draft:data;
+
+  const allRows=[];
+
+  Object.keys(source).forEach(zip=>{
+    (source[zip]||[]).forEach(row=>{
+      allRows.push({
+        zip:zip,
+        route:row[0]??"",
+        space:row[1]??"",
+        vehicle:row[2]??""
+      });
+    });
+  });
+
+  allRows.sort((a,b)=>{
+    const an=parseInt(a.space,10);
+    const bn=parseInt(b.space,10);
+
+    if(!isNaN(an)&&!isNaN(bn)) return an-bn;
+    if(!isNaN(an)) return -1;
+    if(!isNaN(bn)) return 1;
+
+    return String(a.space).localeCompare(
+      String(b.space),
+      undefined,
+      {numeric:true,sensitivity:"base"}
+    );
+  });
+
+  const rows=allRows.map(item=>`
+    <tr>
+      <td><strong class="space-number">${item.space===""?'—':esc(item.space)}</strong></td>
+      <td><strong class="route-number">${esc(item.route)}</strong></td>
+      <td><strong>${esc(item.zip)}</strong></td>
+      <td><span class="vehicle-number">${item.vehicle===""?'—':esc(item.vehicle)}</span></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("content").innerHTML=`
+    <section class="panel zip-panel">
+      <div class="panel-head">
+        <h2>Vancouver PO Parking — Whole Office</h2>
+        <span class="count">${allRows.length} parking spaces</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Space #</th>
+              <th>Route</th>
+              <th>ZIP</th>
+              <th>Vehicle Number</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+
+  window.addEventListener("afterprint",restoreAfterPrint,{once:true});
+}
+
+function restoreAfterPrint(){
+  document.body.classList.remove("print-office");
+  renderTabs();
+  render();
+}
+
+function setStatus(msg){
+  document.getElementById("status").textContent=msg||"";
+  if(msg) setTimeout(()=>document.getElementById("status").textContent="",2200);
+}
+
+function renderTabs(){
+  document.getElementById("tabs").innerHTML=Object.keys(data).map(zip =>
+    `<button class="tab ${zip===active?'active':''}" onclick="setZip('${zip}')">${zip}</button>`
+  ).join("");
+}
+
+function setZip(zip){
+  active=zip;
+  renderTabs();
+  render();
+}
+
+function toggleEdit(){
+  if(!editing){
+    draft=clone(data);
+    editing=true;
+    document.body.classList.add("editing-on");
+    document.getElementById("editToggle").textContent="✕ Close Edit";
+    document.getElementById("editToggle").classList.add("active");
+    document.getElementById("printOptions").classList.remove("show");
+    document.getElementById("editOptions").classList.add("show");
+    render();
+  }else{
+    cancelEdits();
+  }
+}
+
+function render(){
+  const q=document.getElementById("search").value.trim().toUpperCase();
+  const source=editing?draft:data;
+  const zips=q?Object.keys(source):[active];
+
+  const sections=zips.map(zip=>{
+    const allRows=source[zip]||[];
+
+    let rows=q
+      ?allRows.map((row,index)=>({row,index})).filter(({row})=>{
+        return String(row[0]??"").toUpperCase().includes(q) ||
+               String(row[1]??"").toUpperCase().includes(q) ||
+               String(row[2]??"").toUpperCase().includes(q);
+      })
+      :allRows.map((row,index)=>({row,index}));
+
+    rows.sort((a,b)=>{
+      const av=sortBy==="route"?String(a.row[0]??""):String(a.row[1]??"");
+      const bv=sortBy==="route"?String(b.row[0]??""):String(b.row[1]??"");
+      const an=parseInt(av,10),bn=parseInt(bv,10);
+      if(!isNaN(an)&&!isNaN(bn)&&an!==bn)return an-bn;
+      return av.localeCompare(bv,undefined,{numeric:true,sensitivity:"base"});
+    });
+
+    if(q&&!rows.length)return "";
+
+    return `<section class="panel zip-panel">
+      <div class="panel-head">
+        <h2>ZIP ${esc(zip)}</h2>
+        <span class="count">${rows.length} parking space${rows.length===1?'':'s'}</span>
+      </div>
+      ${rows.length?`<div class="table-wrap"><table>
+        <colgroup>
+          <col style="width:23%">
+          <col style="width:23%">
+          <col style="width:46%">
+          ${editing?'<col style="width:42px">':''}
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Space #</th>
+            <th>Route</th>
+            <th>Vehicle Number</th>
+            ${editing?'<th class="edit-only"></th>':''}
+          </tr>
+        </thead>
+        <tbody>${rows.map(({row,index})=>{
+          const route=String(row[0]??"");
+          const space=String(row[1]??"");
+          const vehicle=String(row[2]??"");
+
+          return `<tr>
+            <td>${editing
+              ?`<input class="editable" inputmode="numeric" value="${esc(space)}" placeholder="Space #" onchange="editSpace('${zip}',${index},this.value)">`
+              :`<strong class="space-number">${space===""?'—':esc(space)}</strong>`}</td>
+            <td>${editing
+              ?`<input class="editable" value="${esc(route)}" onchange="editRoute('${zip}',${index},this.value)">`
+              :`<strong class="route-number">${esc(route)}</strong>`}</td>
+            <td>${editing
+              ?`<input class="vehicle-input" value="${esc(vehicle)}" placeholder="Vehicle Number" onchange="editVehicle('${zip}',${index},this.value)">`
+              :`<span class="vehicle-number">${vehicle===""?'—':esc(vehicle)}</span>`}</td>
+            ${editing
+              ?`<td class="edit-only"><button class="delete-btn" onclick="deleteRoute('${zip}',${index})">×</button></td>`
+              :""}
+          </tr>`;
+        }).join("")}</tbody>
+      </table></div>`:`<div class="empty">No matching parking spaces.</div>`}
+    </section>`;
+  }).join("");
+
+  document.getElementById("content").innerHTML=
+    sections||`<div class="empty">No matching parking spaces.</div>`;
+}
+
+function esc(v){
+  return String(v??"")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+function editRoute(zip,i,value){
+  if(draft[zip]&&draft[zip][i])
+    draft[zip][i][0]=value.trim().toUpperCase();
+  render();
+}
+
+function editSpace(zip,i,value){
+  if(draft[zip]&&draft[zip][i])
+    draft[zip][i][1]=value.trim();
+  render();
+}
+
+function editVehicle(zip,i,value){
+  if(draft[zip]&&draft[zip][i])
+    draft[zip][i][2]=value.trim();
+  render();
+}
+
+function deleteRoute(zip,i){
+  if(!draft[zip])return;
+  if(confirm("Delete parking space "+(draft[zip][i]?.[1]||"")+"?")){
+    draft[zip].splice(i,1);
+    render();
+  }
+}
+
+function saveEdits(){
+  for(const rows of Object.values(draft)){
+    rows.forEach(row=>{
+      row[0]=String(row[0]).trim().toUpperCase();
+      row[1]=String(row[1]??"").trim();
+      row[2]=String(row[2]??"").trim();
+    });
+  }
+
+  data=clone(draft);
+  localStorage.setItem(key,JSON.stringify(data));
+
+  editing=false;
+  draft=null;
+  document.body.classList.remove("editing-on");
+  document.getElementById("editToggle").textContent="✎ Edit";
+  document.getElementById("editToggle").classList.remove("active");
+
+  hideActionOptions();
+  renderTabs();
+  render();
+  setStatus("Changes saved on this device.");
+}
+
+function cancelEdits(){
+  editing=false;
+  draft=null;
+  document.body.classList.remove("editing-on");
+  document.getElementById("editToggle").textContent="✎ Edit";
+  document.getElementById("editToggle").classList.remove("active");
+
+  hideActionOptions();
+  renderTabs();
+  render();
+}
+
+function resetData(){
+  if(!confirm("Reset all saved changes and restore the original list from the supplied photos?"))return;
+
+  localStorage.removeItem(key);
+  data=clone(originalData);
+  editing=false;
+  draft=null;
+  document.body.classList.remove("editing-on");
+  document.getElementById("editToggle").textContent="✎ Edit";
+  document.getElementById("editToggle").classList.remove("active");
+
+  hideActionOptions();
+  renderTabs();
+  render();
+  setStatus("Original list restored.");
+}
+
+document.getElementById("search").addEventListener("input",render);
+
+renderTabs();
+render();
+</script>
+</body>
+</html>
